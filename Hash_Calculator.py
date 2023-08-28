@@ -1,10 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-
 import hashlib
 import os
 import tkinter.ttk as ttk
-import pyperclip
+import clipboard
 
 class HashCalculatorApp:
     def __init__(self, root):
@@ -12,44 +11,57 @@ class HashCalculatorApp:
         self.root.title("Hash Calculator")
         self.root.geometry("400x400")  # 调整界面大小
 
-        self.file_label = tk.Label(root, text="选择文件：")
-        self.file_label.pack()
+        try:
+            self.root.minsize(400, 400)  # 设置最小尺寸
+            self.root.maxsize(800, 600)  # 设置最大尺寸
 
-        self.file_button = tk.Button(root, text="浏览", command=self.browse_file)
-        self.file_button.pack()
+            self.root.protocol("WM_DELETE_WINDOW", self.on_closing)  # 注册关闭窗口事件
 
-        self.hash_algorithm_label = tk.Label(root, text="选择哈希算法：")
-        self.hash_algorithm_label.pack()
+            self.file_label = tk.Label(root, text="选择文件：")
+            self.file_label.pack()
 
-        self.hash_algorithm_var = tk.StringVar()
-        self.hash_algorithm_var.set("sha256")  # 默认选择SHA-256
+            self.file_button = tk.Button(root, text="浏览", command=self.browse_file)
+            self.file_button.pack()
 
-        self.hash_algorithm_menu = tk.OptionMenu(root, self.hash_algorithm_var, "md5", "sha1", "sha256", "sha512")
-        self.hash_algorithm_menu.pack()
+            self.hash_algorithm_label = tk.Label(root, text="选择哈希算法：")
+            self.hash_algorithm_label.pack()
 
-        self.calculate_button = tk.Button(root, text="计算哈希值", command=self.calculate_hash)
-        self.calculate_button.pack()
+            self.hash_algorithm_var = tk.StringVar()
+            self.hash_algorithm_var.set("sha256")  # 默认选择SHA-256
 
-        self.progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate")
-        self.progress_bar.pack(fill="x", padx=10, pady=10)
+            self.hash_algorithm_menu = tk.OptionMenu(root, self.hash_algorithm_var, "md5", "sha1", "sha256", "sha512")
+            self.hash_algorithm_menu.pack()
 
-        self.percent_label = tk.Label(root, text="")
-        self.percent_label.pack()
+            self.calculate_button = tk.Button(root, text="计算哈希值", command=self.calculate_hash)
+            self.calculate_button.pack()
 
-        self.result_label = tk.Label(root, text="")
-        self.result_label.pack()
+            self.progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate")
+            self.progress_bar.pack(fill="x", padx=10, pady=10)
 
-        self.copy_button = tk.Button(root, text="复制哈希值", command=self.copy_hash)
-        self.copy_button.pack()
+            self.percent_label = tk.Label(root, text="")
+            self.percent_label.pack()
 
-        self.hash_input_label = tk.Label(root, text="输入要比对的哈希值：")
-        self.hash_input_label.pack()
+            self.result_label = tk.Label(root, text="")
+            self.result_label.pack()
 
-        self.hash_input = tk.Text(root, height=3)
-        self.hash_input.pack()
+            self.copy_button = tk.Button(root, text="复制哈希值", command=self.copy_hash)
+            self.copy_button.pack()
 
-        self.compare_button = tk.Button(root, text="比对哈希值", command=self.compare_hash)
-        self.compare_button.pack()
+            self.hash_input_label = tk.Label(root, text="输入要比对的哈希值：")
+            self.hash_input_label.pack()
+
+            self.hash_input = tk.Text(root, height=3)
+            self.hash_input.pack()
+
+            self.compare_button = tk.Button(root, text="比对哈希值", command=self.compare_hash)
+            self.compare_button.pack()
+
+        except Exception as e:
+            print("An error occurred:", e)
+
+    def on_closing(self):
+        if messagebox.askokcancel("退出", "确定要退出吗？"):
+            self.root.destroy()
 
     def browse_file(self):
         selected_file = filedialog.askopenfilename()
@@ -65,7 +77,10 @@ class HashCalculatorApp:
             self.progress_bar["value"] = 0
 
             with open(self.selected_file, 'rb') as f:
-                while chunk := f.read(8192):
+                while True:
+                    chunk = f.read(8192)
+                    if not chunk:
+                        break
                     hash_obj.update(chunk)
                     self.progress_bar["value"] += len(chunk)
                     self.root.update_idletasks()  # 更新界面
@@ -80,7 +95,7 @@ class HashCalculatorApp:
 
     def copy_hash(self):
         if hasattr(self, 'calculated_hash'):
-            pyperclip.copy(self.calculated_hash)
+            clipboard.copy(self.calculated_hash)
             self.copy_button.config(text="已复制")
         else:
             self.copy_button.config(text="无可复制的哈希值")
@@ -102,3 +117,5 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = HashCalculatorApp(root)
     root.mainloop()
+
+#pyinstaller --onefile Hash_Calculator.py
